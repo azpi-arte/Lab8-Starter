@@ -54,6 +54,23 @@ function initializeServiceWorker() {
   // B5. TODO - In the event that the service worker registration fails, console
   //            log that it has failed.
   // STEPS B6 ONWARDS WILL BE IN /sw.js
+
+  // Check if service workers are enabled, and if so, register the service worker
+  if ("serviceWorker" in navigator) {
+    // Register the service worker
+    window.addEventListener('load', async () => {
+      try {
+        let registration = await navigator.serviceWorker.register('./sw.js');
+
+        // Print out status of service worker
+        if (registration.active) {
+          console.log("Service worker active and registration successful");
+        }
+      } catch (error) {
+        console.error(`Service worker registration failed with ${error}`);
+      }
+    });
+  }
 }
 
 /**
@@ -69,6 +86,7 @@ async function getRecipes() {
   // A1. TODO - Check local storage to see if there are any recipes.
   //            If there are recipes, return them.
   /**************************/
+  
   // The rest of this method will be concerned with requesting the recipes
   // from the network
   // A2. TODO - Create an empty array to hold the recipes that you will fetch
@@ -100,6 +118,39 @@ async function getRecipes() {
   //            resolve() method.
   // A10. TODO - Log any errors from catch using console.error
   // A11. TODO - Pass any errors to the Promise's reject() function
+  
+  let recipes = JSON.parse(localStorage.getItem('recipes'));
+  // if 'recipes' doesnt exist in LocalStorage or the array is empty, populate recipelist
+  if (recipes == null || recipes.length == 0) {    
+    // array to hold the promises.
+    let recipeList = [];
+
+    return new Promise(async function(resolve, reject) {
+      // bulk of code 
+      for (let i = 0; i < RECIPE_URLS.length; i++) {
+        // try to fetch the URL, otherwise log and pass error
+        try {
+          const response = await fetch(RECIPE_URLS[i]);
+          const recipeJSON = await response.json();
+          recipeList.push(recipeJSON);
+
+          // check if all recipes have been fetched
+          if (i == RECIPE_URLS.length - 1) {
+            saveRecipesToStorage(recipeList);
+            resolve(recipeList)
+          }
+        } catch (error) {
+          console.error(error);
+          reject(error)
+          return;
+        }
+      }
+    })
+  }
+  
+  else {
+    return recipes;
+  }
 }
 
 /**
